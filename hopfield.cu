@@ -16,6 +16,7 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 	for (int i = 0; i <= nP; i++)
 		ws[x] += ps[i*dimP+(x/dimP)]*ps[i*dimP+(x%dimP)];
 	ws[(x/dimP)*dimP+(x/dimP)] = 0;
+	__syncthreads();
 	ws[x] = ws[x]/dimP;
 }
 
@@ -37,7 +38,7 @@ int main(int argc, char *argv[]){
 	cudaMalloc ( (float**) &ws, (sizeW));
       
 	for (int i = 0; i < nPatterns*dimPatterns; i++) {
-		patterns[i] = rand() % 2; 
+		patterns[i] = rand() % 2 == 0 ? -1 : 1; 
 	}
 	cudaMemcpy (ps, patterns, sizeP, cudaMemcpyHostToDevice);
 
@@ -52,17 +53,15 @@ int main(int argc, char *argv[]){
 	dim3 GRID_DIM ((int)((dimPatterns*dimPatterns)/sizeGrid)+1);
 	dim3 BLOCK_DIM (dimPatterns*dimPatterns);
 	training<<< GRID_DIM, BLOCK_DIM >>> (dimPatterns, nPatterns, ps, weights);
-/*
-//   cudaThreadSynchronize();
-   
-//   cudaMemcpy (sol, devSol, sizeW, cudaMemcpyDeviceToHost);	
-   printf("C:\n");
-   for(int i = 0; i < N; i++){
-      printf("[ ");
-      for (int j = 0; j < N; j++) {
-         printf("%.3f ", sol[i*N+j]);
-      }
-      printf("]\n"); 
-   }
-*/ 
+	cudaThreadSynchronize();
+  
+	cudaMemcpy (weights, ws, sizeW, cudaMemcpyDeviceToHost);	
+   	printf("C:\n");
+   	for(int i = 0; i < dimPatterns; i++){
+      		printf("[ ");
+      		for (int j = 0; j < dimPatterns; j++) {
+         		printf("%.3f ", weights[i*dimPatterns+j]);
+      		}
+      		printf("]\n"); 
+   	}	
 }
