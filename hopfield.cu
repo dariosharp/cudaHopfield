@@ -13,11 +13,15 @@
 __global__ void training(int dimP, int nP, int *ps, float *ws){
 	int x;
 	x = blockIdx.x*blockDim.x + threadIdx.x;
+	for (int i = 0; i <= nP; i++)
+		ws[x] += ps[i*dimP+(x/dimP)]*ps[i*dimP+(x%dimP)];
+	ws[(x/dimP)*dimP+(x/dimP)] = 0;
+	ws[x] = ws[x]/dimP;
 }
 
 
 int main(int argc, char *argv[]){
-	int *patterns, *ps; 
+	int *patterns, *ps;
 	float *ws, *weights;
 	int nPatterns, dimPatterns;
 	//printf("Insert number of patterns: ");
