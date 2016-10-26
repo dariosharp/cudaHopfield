@@ -11,13 +11,14 @@
 
 
 __global__ void training(int dimP, int nP, int *ps, float *ws){
+	extern __shared__ float s[];
 	int x;
 	x = blockIdx.x*blockDim.x + threadIdx.x;
-	for (int i = 0; i <= nP; i++)
-		ws[x] += ps[i*dimP+(x/dimP)]*ps[i*dimP+(x%dimP)];
-	ws[(x/dimP)*dimP+(x/dimP)] = 0;
+	for (int i = 0; i < nP; i++)	
+		s[x] += (float)(ps[i*dimP+(x/dimP)]*ps[i*dimP+(x%dimP)]);
+	s[((x/dimP)*dimP)+(x/dimP)] = 0.0f;
 	__syncthreads();
-	ws[x] = ws[x]/dimP;
+	ws[x] = s[x]/nP;
 }
 
 
@@ -34,13 +35,13 @@ int main(int argc, char *argv[]){
 	int sizeW = dimPatterns*dimPatterns*sizeof(float);
 	if ((patterns = (int*) malloc (sizeP*nPatterns)) == NULL ) return 1;
 	if ((weights = (float*) malloc (sizeW)) == NULL ) return 1;
-	cudaMalloc ( (void**) &ps, (sizeP*nPatterns));
-	cudaMalloc ( (float**) &ws, (sizeW));
+	cudaMalloc ( &ps, (sizeP*nPatterns));
+	cudaMalloc ( &ws, (sizeW));
       
 	for (int i = 0; i < nPatterns*dimPatterns; i++) {
 		patterns[i] = rand() % 2 == 0 ? -1 : 1; 
 	}
-	cudaMemcpy (ps, patterns, sizeP, cudaMemcpyHostToDevice);
+	cudaMemcpy (ps, patterns, sizeP*nPatterns, cudaMemcpyHostToDevice);
 
 	for (int j = 0; j < nPatterns; j++){
 		printf("[ ");
@@ -50,9 +51,9 @@ int main(int argc, char *argv[]){
 		 printf("]\n");
 	}
  
-	dim3 GRID_DIM ((int)((dimPatterns*dimPatterns)/sizeGrid)+1);
+	dim3 GRID_DIM (1);//(int)((dimPatterns*dimPatterns)/sizeGrid)+1);
 	dim3 BLOCK_DIM (dimPatterns*dimPatterns);
-	training<<< GRID_DIM, BLOCK_DIM >>> (dimPatterns, nPatterns, ps, weights);
+	training<<< GRID_DIM, BLOCK_DIM, dimPatterns*dimPatterns*sizeof(float) >>> (dimPatterns, nPatterns, ps, ws);
 	cudaThreadSynchronize();
   
 	cudaMemcpy (weights, ws, sizeW, cudaMemcpyDeviceToHost);	
