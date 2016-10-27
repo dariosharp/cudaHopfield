@@ -22,12 +22,12 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 }
 
 
-__global__ void hopActivation(int *dimP, int *ws, int*pt, int*at){
-	int neuron_index = blockDim.x*blockIdx.x + threadIdx.x;
-	int product = 0;
+__global__ void hopActivation(int dimP, float *ws, int *pt, float *at){
+	int x = blockDim.x*blockIdx.x + threadIdx.x;
+	float  product = 0;
 	for (int i = 0; i < dimP; i++)
 		product += ws[(x*dimP)+i] * pt[i];
-	activation[neuron_index] = product;
+	at[x] = product;
 }
 
 
@@ -49,48 +49,79 @@ __global__ void sigmoid_kernel (const double * __restrict__ src,
 */
 
 
+float * lState (int nPatterns, int dimPattern, int *patterns){
+	int *ps;
+	float *weights, *ws;
+	int sizeP = dimPattern*sizeof(int);
+	int sizeW = dimPattern*dimPattern*sizeof(float);
+
+	if ((weights = (float*) malloc (sizeW)) == NULL ) return NULL;
+	if ( cudaSuccess != cudaMalloc ( &ps, (sizeP*nPatterns))) return NULL;
+	if ( cudaSuccess != cudaMalloc ( &ws, (sizeW))) return NULL;
+	if ( cudaSuccess != cudaMemcpy (ps, patterns, sizeP*nPatterns, cudaMemcpyHostToDevice)) return NULL;
+
+	dim3 GRID_DIM (1);
+	dim3 BLOCK_DIM (dimPattern*dimPattern);
+	training<<< GRID_DIM, BLOCK_DIM, dimPattern*dimPattern*sizeof(float) >>> (dimPattern, nPatterns, ps, ws);
+  
+	if (cudaSuccess != cudaMemcpy (weights, ws, sizeW, cudaMemcpyDeviceToHost)) return NULL;
+   	return weights;
+}
+
+/*
+int actFunc(int nP, int dP,float *weight){
+	float *ws, at;
+	if (cudaSuccess != cudaMalloc (&ws (dP*dP*sizeof(float)))) return NULL;
+	if (cudaSuccess != cudaMalloc (&at (dP*sizeof(float)))) return NULL;
+	if ( cudaSuccess != cudaMemcpy (ws, weight, dP*dP*sizeof(float), cudaMemcpyHostToDevice)) return NULL;
+
+	dim3 GRID_DIM (1);
+	dim3 BLOCK_DIM (dP);
+	
+	hopActivation<<< GRID_DIM, BLOCK_DIM >>> (dP, ws, at);
+  
+	return 0;	
+	
+}
+*/
 
 int main(int argc, char *argv[]){
-	int *patterns, *ps;
-	float *ws, *weights;
-	int nPatterns, dimPatterns;
-	//printf("Insert number of patterns: ");
-	//scanf("%d", &num);
-	nPatterns = 3;
-	dimPatterns = 7;
+	int nPatterns, dimPattern;
+	int * patterns;
 
-	int sizeP = dimPatterns*sizeof(int);
-	int sizeW = dimPatterns*dimPatterns*sizeof(float);
-	if ((patterns = (int*) malloc (sizeP*nPatterns)) == NULL ) return 1;
-	if ((weights = (float*) malloc (sizeW)) == NULL ) return 1;
-	cudaMalloc ( &ps, (sizeP*nPatterns));
-	cudaMalloc ( &ws, (sizeW));
-      
-	for (int i = 0; i < nPatterns*dimPatterns; i++) {
+	nPatterns = 3;
+	dimPattern = 7;
+	if ((patterns = (int*) malloc (dimPattern*nPatterns*sizeof(int))) == NULL ) return 1;
+
+	for (int i = 0; i < nPatterns*dimPattern; i++) {
 		patterns[i] = rand() % 2; 
 	}
-	cudaMemcpy (ps, patterns, sizeP*nPatterns, cudaMemcpyHostToDevice);
-
 	for (int j = 0; j < nPatterns; j++){
 		printf("[ ");
-		for (int i = 0; i < dimPatterns; i++) {
-			printf("%d ", patterns[j*dimPatterns + i]);
+		for (int i = 0; i < dimPattern; i++) {
+			printf("%d ", patterns[j*dimPattern + i]);
 		}
 		 printf("]\n");
 	}
- 
-	dim3 GRID_DIM (1);//(int)((dimPatterns*dimPatterns)/sizeGrid)+1);
-	dim3 BLOCK_DIM (dimPatterns*dimPatterns);
-	training<<< GRID_DIM, BLOCK_DIM, dimPatterns*dimPatterns*sizeof(float) >>> (dimPatterns, nPatterns, ps, ws);
-	cudaThreadSynchronize();
-  
-	cudaMemcpy (weights, ws, sizeW, cudaMemcpyDeviceToHost);	
-   	printf("Weights:\n");
-   	for(int i = 0; i < dimPatterns; i++){
+
+	float * weights = lState(nPatterns, dimPattern, patterns);
+	if (weights == NULL){
+		printf("Error on Learning\n");
+		return 1;
+	}
+
+	printf("Weights:\n");
+   	for(int i = 0; i < dimPattern; i++){
       		printf("[ ");
-      		for (int j = 0; j < dimPatterns; j++) {
-         		printf("%.3f ", weights[i*dimPatterns+j]);
+      		for (int j = 0; j < dimPattern; j++) {
+         		printf("%.3f ", weights[i*dimPattern+j]);
       		}
       		printf("]\n"); 
-   	}	
+   	}
+/*
+	if (actFuncion(nPatterns, dimPattern, weights) == NULL){
+		printf("Error on Activarion\n");
+		return 1;
+	}
+*/
 }
