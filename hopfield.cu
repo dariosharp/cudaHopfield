@@ -69,18 +69,24 @@ float * lState (int nPatterns, int dimPattern, int *patterns){
 }
 
 
-int actFunc(int nP, int dP,float *weight){
-	float *ws, at;
-	if (cudaSuccess != cudaMalloc (&ws (dP*dP*sizeof(float)))) return NULL;
-	if (cudaSuccess != cudaMalloc (&at (dP*sizeof(float)))) return NULL;
+float * actFunc(int dP, int *pattern, float *weight){
+	float *ws, *at, *activation;
+	int *pt;
+	if ( (activation = (float *) malloc (dP*sizeof(float))) == NULL) return NULL;
+	if (cudaSuccess != cudaMalloc (&ws, dP*dP*sizeof(float))) return NULL;
+	if (cudaSuccess != cudaMalloc (&pt, dP*sizeof(int))) return NULL;
+	if (cudaSuccess != cudaMalloc (&at, dP*sizeof(float))) return NULL;
 	if ( cudaSuccess != cudaMemcpy (ws, weight, dP*dP*sizeof(float), cudaMemcpyHostToDevice)) return NULL;
+	if ( cudaSuccess != cudaMemcpy (pt, pattern, dP*sizeof(int), cudaMemcpyHostToDevice)) return NULL;
+
 
 	dim3 GRID_DIM (1);
 	dim3 BLOCK_DIM (dP);
 	
-	hopActivation<<< GRID_DIM, BLOCK_DIM >>> (dP, ws, at);
-  
-	return 0;	
+	hopActivation<<< GRID_DIM, BLOCK_DIM >>> (dP, ws, pt, at);
+  	if (cudaSuccess != cudaMemcpy (activation, at, dP, cudaMemcpyDeviceToHost)) return NULL;
+   	
+	return activation;
 	
 }
 
@@ -118,10 +124,14 @@ int main(int argc, char *argv[]){
       		}
       		printf("]\n"); 
    	}
-/*
-	if (actFuncion(nPatterns, dimPattern, weights) == NULL){
+
+	float * activation = actFunc(dimPattern, patterns, weights);
+	if (activation == NULL){
 		printf("Error on Activarion\n");
 		return 1;
 	}
-*/
+	printf("activation [");
+	for (int i = 0; i < dimPattern; i++)
+		printf("%.3f ", activation[i]);
+	printf("]\n");
 }
