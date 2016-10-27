@@ -24,10 +24,10 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 
 __global__ void hopActivation(int dimP, float *ws, int *pt, int *at){
 	int x = blockDim.x*blockIdx.x + threadIdx.x;
-	float  product = 0.0; 
+	int product = 0; 
 	for (int i = 0; i < dimP; i++)
-		product += ws[(x*dimP)+i] * pt[i];
-	at[x] = product;
+		product += ws[(x*dimP)+i] * (2*pt[i]-1);
+	at[x] = ((product > 0) - (product < 0)+1)/2;
 }
 
 
@@ -127,12 +127,12 @@ int main(int argc, char *argv[]){
 	
 	int * epat = (int *)malloc (dimPattern*sizeof(int));
 	epat[0] = 1;
-	epat[1] = -1;
+	epat[1] = 0;
 	epat[2] = 1;
 	epat[3] = 1;
 	epat[4] = 1;
 	epat[5] = 1;
-	epat[6] = -1;
+	epat[6] = 0;
 
 	int * activation = actFunc(dimPattern, epat, weights);
 	if (activation == NULL){
