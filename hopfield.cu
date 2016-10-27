@@ -68,7 +68,7 @@ float * lState (int nPatterns, int dimPattern, int *patterns){
    	return weights;
 }
 
-/*
+
 int actFunc(int nP, int dP,float *weight){
 	float *ws, at;
 	if (cudaSuccess != cudaMalloc (&ws (dP*dP*sizeof(float)))) return NULL;
@@ -83,7 +83,7 @@ int actFunc(int nP, int dP,float *weight){
 	return 0;	
 	
 }
-*/
+
 
 int main(int argc, char *argv[]){
 	int nPatterns, dimPattern;
