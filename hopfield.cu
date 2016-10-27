@@ -24,7 +24,7 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 
 __global__ void hopActivation(int dimP, float *ws, int *pt, float *at){
 	int x = blockDim.x*blockIdx.x + threadIdx.x;
-	float  product = 0;
+	float  product = 0; 
 	for (int i = 0; i < dimP; i++)
 		product += ws[(x*dimP)+i] * pt[i];
 	at[x] = product;
@@ -84,7 +84,7 @@ float * actFunc(int dP, int *pattern, float *weight){
 	dim3 BLOCK_DIM (dP);
 	
 	hopActivation<<< GRID_DIM, BLOCK_DIM >>> (dP, ws, pt, at);
-  	if (cudaSuccess != cudaMemcpy (activation, at, dP, cudaMemcpyDeviceToHost)) return NULL;
+  	if (cudaSuccess != cudaMemcpy (activation, at, dP*sizeof(float), cudaMemcpyDeviceToHost)) return NULL;
    	
 	return activation;
 	
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]){
 	int nPatterns, dimPattern;
 	int * patterns;
 
-	nPatterns = 3;
+	nPatterns = 2;
 	dimPattern = 7;
 	if ((patterns = (int*) malloc (dimPattern*nPatterns*sizeof(int))) == NULL ) return 1;
 
