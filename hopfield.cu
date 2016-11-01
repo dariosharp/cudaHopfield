@@ -17,36 +17,45 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 	for (int i = 0; i < nP; i++)	
 		s[x] += (float)((2*ps[i*dimP+(x/dimP)]-1)*(2*ps[i*dimP+(x%dimP)]-1));
 	s[((x/dimP)*dimP)+(x/dimP)] = 0.0f;
-	//__syncthreads();
 	ws[x] = s[x]/nP;
 }
 
-
+/*
 __global__ void hopActivation(int dimP, float *ws, int *pt, int *at){
 	int x = blockDim.x*blockIdx.x + threadIdx.x;
-	int product = 0; 
+	float product = 0.0f; 
 	for (int i = 0; i < dimP; i++)
 		product += ws[(x*dimP)+i] * (2*pt[i]-1);
-	at[x] = ((product > 0) - (product < 0)+1)/2;
+	at[x] = product;//((product > 0) - (product < 0)+1)/2;
 }
-
-
-/*__device__ __forceinline__ double sigmoid (double a)
-{
-    return 1.0 / (1.0 + exp (-a));
-}
-
-
-__global__ void sigmoid_kernel (const double * __restrict__ src, 
-                                double * __restrict__ dst, int len)
-{
-    int stride = gridDim.x * blockDim.x;
-    int tid = blockDim.x * blockIdx.x + threadIdx.x;
-    for (int i = tid; i < len; i += stride) {
-        dst[i] = sigmoid (src[i]);
-    }
-}   
 */
+
+
+__global__ void hopActivation(int dimP, float *ws, int *pt, int *at)
+{
+        extern __shared__ float sdata [];
+        int tid=blockDim.x*blockIdx.x+threadIdx.x;      
+        int wid= tid / dimP;
+        int lane=tid % dimP;
+        if (wid < dimP ){
+                int start_neuron = (wid*dimP);
+                int end_neuron = ((wid+1)*dimP);
+                sdata[threadIdx.x]=0;
+		//printf("tid = %i, wid = %i, start_neuron = %i,  end_neuron = %i\n", tid, wid, start_neuron,  end_neuron);
+                for(int i=start_neuron+lane;i<end_neuron;i+=32)
+                        sdata[threadIdx.x]+= ws[i] * (2*pt[i % dimP ] -1);
+			//printf("sdata[%i] = %.1f ws[%i] = %.1f pt[%i] = %i lane = %i\n", threadIdx.x, sdata[threadIdx.x], i, ws[i], i %dimP, (2*pt[i %dimP ] -1), lane);
+		__syncthreads();
+                if (lane + 16 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+16]; __syncthreads();
+		if (lane +  8 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 8]; __syncthreads();
+                if (lane +  4 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 4]; __syncthreads();
+                if (lane +  2 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 2]; __syncthreads();
+                if (lane +  1 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 1];
+                if (lane ==0)
+                	at[wid] = ((sdata[threadIdx.x] > 0) - (sdata[threadIdx.x] < 0)+1)/2;
+        }
+}
+
 
 
 float * lState (int nPatterns, int dimPattern, int *patterns){
@@ -79,15 +88,12 @@ int * actFunc(int dP, int *pattern, float *weight){
 	if ( cudaSuccess != cudaMemcpy (ws, weight, dP*dP*sizeof(float), cudaMemcpyHostToDevice)) return NULL;
 	if ( cudaSuccess != cudaMemcpy (pt, pattern, dP*sizeof(int), cudaMemcpyHostToDevice)) return NULL;
 
-
 	dim3 GRID_DIM (1);
-	dim3 BLOCK_DIM (dP);
+	dim3 BLOCK_DIM (dP*dP);
+	hopActivation<<< GRID_DIM, BLOCK_DIM, dP*dP*sizeof(float) >>> (dP, ws, pt, at);
 
-	hopActivation<<< GRID_DIM, BLOCK_DIM >>> (dP, ws, pt, at);
   	if (cudaSuccess != cudaMemcpy (activation, at, dP*sizeof(int), cudaMemcpyDeviceToHost)) return NULL;
-   	
 	return activation;
-	
 }
 
 
