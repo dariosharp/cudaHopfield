@@ -34,25 +34,26 @@ __global__ void hopActivation(int dimP, float *ws, int *pt, int *at){
 __global__ void hopActivation(int dimP, float *ws, int *pt, int *at)
 {
         extern __shared__ float sdata [];
-        int tid=blockDim.x*blockIdx.x+threadIdx.x;      
-        int wid= tid / dimP;
-        int lane=tid % dimP;
-        if (wid < dimP ){
+        int tid = blockDim.x*blockIdx.x+threadIdx.x;
+	int wpS = sizeWarp;
+	if (dimP < 32)
+		wpS = dimP; 
+        int wid = tid / wpS;
+        int lane= tid % wpS;
+        if (wid < wpS ){
                 int start_neuron = (wid*dimP);
                 int end_neuron = ((wid+1)*dimP);
                 sdata[threadIdx.x]=0;
-		//printf("tid = %i, wid = %i, start_neuron = %i,  end_neuron = %i\n", tid, wid, start_neuron,  end_neuron);
                 for(int i=start_neuron+lane;i<end_neuron;i+=32)
                         sdata[threadIdx.x]+= ws[i] * (2*pt[i % dimP ] -1);
-			//printf("sdata[%i] = %.1f ws[%i] = %.1f pt[%i] = %i lane = %i\n", threadIdx.x, sdata[threadIdx.x], i, ws[i], i %dimP, (2*pt[i %dimP ] -1), lane);
 		__syncthreads();
                 if (lane + 16 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+16]; __syncthreads();
 		if (lane +  8 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 8]; __syncthreads();
                 if (lane +  4 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 4]; __syncthreads();
                 if (lane +  2 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 2]; __syncthreads();
                 if (lane +  1 < dimP) sdata[threadIdx.x] += sdata[threadIdx.x+ 1];
-                if (lane ==0)
-                	at[wid] = ((sdata[threadIdx.x] > 0) - (sdata[threadIdx.x] < 0)+1)/2;
+                if (lane == 0)
+	        	at[wid] = ((sdata[threadIdx.x] > 0) - (sdata[threadIdx.x] < 0)+1)/2;
         }
 }
 
