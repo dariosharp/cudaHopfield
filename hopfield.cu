@@ -20,17 +20,6 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 	ws[x] = s[x]/nP;
 }
 
-/*
-__global__ void hopActivation(int dimP, float *ws, int *pt, int *at){
-	int x = blockDim.x*blockIdx.x + threadIdx.x;
-	float product = 0.0f; 
-	for (int i = 0; i < dimP; i++)
-		product += ws[(x*dimP)+i] * (2*pt[i]-1);
-	at[x] = product;//((product > 0) - (product < 0)+1)/2;
-}
-*/
-
-
 __global__ void hopActivation(int dimP, float *ws, int *pt, int *at)
 {
         extern __shared__ float sdata [];
@@ -136,7 +125,7 @@ int main(int argc, char *argv[]){
 	epat[0] = 1;
 	epat[1] = 0;
 	epat[2] = 1;
-	epat[3] = 1;
+	epat[3] = 0;
 	epat[4] = 1;
 	epat[5] = 1;
 	epat[6] = 0;
