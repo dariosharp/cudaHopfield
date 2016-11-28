@@ -5,12 +5,14 @@
 #include <sys/types.h>
 #include <cuda_runtime_api.h>
 
+
 #define sizeGrid 65535
 #define sizeBlok 1024
 #define sizeWarp 32
 
 
-__global__ void training(int dimP, int nP, int *ps, float *ws){
+__global__ void training(int dimP, int nP, int *ps, float *ws)
+{
 	extern __shared__ float s[];
 	int x;
 	x = blockIdx.x*blockDim.x + threadIdx.x;
@@ -19,6 +21,7 @@ __global__ void training(int dimP, int nP, int *ps, float *ws){
 	s[((x/dimP)*dimP)+(x/dimP)] = 0.0f;
 	ws[x] = s[x]/nP;
 }
+
 
 __global__ void hopActivation(int dimP, float *ws, int *pt, int *at)
 {
@@ -47,8 +50,8 @@ __global__ void hopActivation(int dimP, float *ws, int *pt, int *at)
 }
 
 
-
-float * lState (int nPatterns, int dimPattern, int *patterns){
+float * lState (int nPatterns, int dimPattern, int *patterns)
+{
 	int *ps;
 	float *weights, *ws;
 	int sizeP = dimPattern*sizeof(int);
@@ -68,7 +71,8 @@ float * lState (int nPatterns, int dimPattern, int *patterns){
 }
 
 
-int * actFunc(int dP, int *pattern, float *weight){
+int * actFunc(int dP, int *pattern, float *weight)
+{
 	float *ws;
 	int *pt, *activation, *at;
 	if ( (activation = (int *) malloc (dP*sizeof(int))) == NULL) return NULL;
@@ -84,59 +88,4 @@ int * actFunc(int dP, int *pattern, float *weight){
 
   	if (cudaSuccess != cudaMemcpy (activation, at, dP*sizeof(int), cudaMemcpyDeviceToHost)) return NULL;
 	return activation;
-}
-
-
-int main(int argc, char *argv[]){
-	int nPatterns, dimPattern;
-	int * patterns;
-
-	nPatterns = 2;
-	dimPattern = 7;
-	if ((patterns = (int*) malloc (dimPattern*nPatterns*sizeof(int))) == NULL ) return 1;
-
-	for (int i = 0; i < nPatterns*dimPattern; i++) {
-		patterns[i] = rand() % 2; 
-	}
-	for (int j = 0; j < nPatterns; j++){
-		printf("[ ");
-		for (int i = 0; i < dimPattern; i++) {
-			printf("%d ", patterns[j*dimPattern + i]);
-		}
-		 printf("]\n");
-	}
-
-	float * weights = lState(nPatterns, dimPattern, patterns);
-	if (weights == NULL){
-		printf("Error on Learning\n");
-		return 1;
-	}
-
-	printf("Weights:\n");
-   	for(int i = 0; i < dimPattern; i++){
-      		printf("[ ");
-      		for (int j = 0; j < dimPattern; j++) {
-         		printf("%.3f ", weights[i*dimPattern+j]);
-      		}
-      		printf("]\n"); 
-   	}
-	
-	int * epat = (int *)malloc (dimPattern*sizeof(int));
-	epat[0] = 1;
-	epat[1] = 0;
-	epat[2] = 1;
-	epat[3] = 0;
-	epat[4] = 1;
-	epat[5] = 1;
-	epat[6] = 0;
-
-	int * activation = actFunc(dimPattern, epat, weights);
-	if (activation == NULL){
-		printf("Error on Activarion\n");
-		return 1;
-	}
-	printf("activation [");
-	for (int i = 0; i < dimPattern; i++)
-		printf("%i ", activation[i]);
-	printf("]\n");
 }
