@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <cuda_runtime_api.h>
 #include "hopfield.h"
 
 int checkVal(float *weights, int dimPattern, int nPatterns)
@@ -10,7 +11,7 @@ int checkVal(float *weights, int dimPattern, int nPatterns)
 	int * epat = (int *)malloc (dimPattern*sizeof(int));
         
 	srand(time(NULL));
-	printf("Input:\n[");
+	printf("Input: [");
         for (i = 0; i < dimPattern; i++) {
                 epat[i] = rand() % 2;
 		printf(" %d", epat[i]);
@@ -24,7 +25,7 @@ int checkVal(float *weights, int dimPattern, int nPatterns)
                 return 1;
         }
 
-        printf("activation [");
+        printf("Activation: [");
         for (i = 0; i < dimPattern; i++)
                 printf("%i ", epat[i]);
         printf("]\n");
@@ -69,6 +70,24 @@ float * randomValue(int nPatterns, int dimPattern)
 	return weights;
 }
 
+int parserFile(char * path, int patters)
+{
+	return 0;
+	/*
+	FILE* fp;
+	char buffer[255];
+
+	fp = fopen("path, "r");
+
+	while(fgets(buffer, 255, (FILE*) fp)) {
+    		
+	}
+
+	fclose(fp);
+	return dimP;
+	*/
+	
+}
 
 int main(int argc, char *argv[])
 {
@@ -84,11 +103,11 @@ int main(int argc, char *argv[])
 
 	for (i = 1; i < argc; i++){
 		if(strcmp(argv[i], "-pf")==0){
-			type += 0x1
-			printf("Pattens file name: %s\n", argv[++i]);		
+			type += 0x1;
+			parserFile(argv[++i], 2);		
 		}
 		if(strcmp(argv[i], "-rf")==0){
-			printf("Pattenrs recognize file name: %s\n", argv[++i]);		
+			parserFile(argv[++i], 2);		
 		}
 		if(strcmp(argv[i], "--inline")==0){
 			type += 0x10;

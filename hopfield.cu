@@ -1,4 +1,3 @@
-//nvcc -arch=sm_20 hopfield.cu -o hopfield
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -16,7 +15,8 @@ __global__ void training(int dimP, int nP, int *ps, float *ws)
 	extern __shared__ float s[];
 	int x;
 	x = blockIdx.x*blockDim.x + threadIdx.x;
-	for (int i = 0; i < nP; i++)	
+	s[x] = 0.0f;
+	for (int i = 0; i < nP; i++)
 		s[x] += (float)((2*ps[i*dimP+(x/dimP)]-1)*(2*ps[i*dimP+(x%dimP)]-1));
 	s[((x/dimP)*dimP)+(x/dimP)] = 0.0f;
 	ws[x] = s[x]/nP;
@@ -67,6 +67,8 @@ float * lState (int nPatterns, int dimPattern, int *patterns)
 	training<<< GRID_DIM, BLOCK_DIM, dimPattern*dimPattern*sizeof(float) >>> (dimPattern, nPatterns, ps, ws);
   
 	if (cudaSuccess != cudaMemcpy (weights, ws, sizeW, cudaMemcpyDeviceToHost)) return NULL;
+	cudaFree(ps);
+	cudaFree(ws);
    	return weights;
 }
 
@@ -87,5 +89,8 @@ int * actFunc(int dP, int *pattern, float *weight)
 	hopActivation<<< GRID_DIM, BLOCK_DIM, dP*dP*sizeof(float) >>> (dP, ws, pt, at);
 
   	if (cudaSuccess != cudaMemcpy (activation, at, dP*sizeof(int), cudaMemcpyDeviceToHost)) return NULL;
+	cudaFree(ws);
+	cudaFree(pt);
+	cudaFree(at);
 	return activation;
 }
