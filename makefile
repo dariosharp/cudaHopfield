@@ -6,3 +6,4 @@ hopfield.o: hopfield.cu hopfield.h
 
 clean:
 	rm *.o
+	rm hopfield
