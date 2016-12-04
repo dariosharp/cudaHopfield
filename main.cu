@@ -14,23 +14,26 @@
 			printf("\t\t-pf [patterns file name]\n");\
                 	printf("\t\t-rf [patterns recognize]\n");\
                 	printf("\t\t-dimP [size of pattern]\n");\
-                	printf("\t\t-nP [number of pattern]\n");\
-                	printf("\t-v            verbose mode\n");
+                	printf("\t\t-nP [number of pattern]\n");
 
 
-int checkVal(float *weights, int dimPattern, int nPatterns)
+void print_weights(float *weights, int dimP)
+{
+	int i, j;
+	printf("Weights:\n");
+        for (i = 0; i < dimP; i++) {
+        	printf("[ ");
+               	for (j = 0; j < dimP; j++) {
+               		printf("%.3f ", weights[i*dimP+j]);
+                }
+	printf("]\n");
+        }
+}
+
+
+int checkVal(float *weights, int * epat, int dimPattern, int nPatterns)
 {
 	int i = 0;
-	int * epat = (int *)malloc (dimPattern*sizeof(int));
-        
-	srand(time(NULL));
-	printf("Input:\t\t[");
-        for (i = 0; i < dimPattern; i++) {
-                epat[i] = rand() % 2;
-		printf(" %d", epat[i]);
-        }
-	printf(" ]\n");
-
 	for (i = 0; i < CICLI; i++)
         	epat = actFunc(dimPattern, epat, weights);
         if (epat == NULL) {
@@ -52,10 +55,10 @@ float * randomValue(int nPatterns, int dimPattern)
 {
       	int * patterns;
 	int i, j;
-        
+        time_t t;
 	if ((patterns = (int*) malloc (dimPattern*nPatterns*sizeof(int))) == NULL ) return NULL;
 
-	srand(time(NULL));
+	srand((unsigned) time(&t));
         for (i = 0; i < nPatterns*dimPattern; i++) {
                 patterns[i] = rand() % 2;
         }
@@ -75,14 +78,7 @@ float * randomValue(int nPatterns, int dimPattern)
         }
 	
 	if (verbose_mode) {
-        	printf("Weights:\n");
-        	for (i = 0; i < dimPattern; i++) {
-                	printf("[ ");
-                	for (j = 0; j < dimPattern; j++) {
-                        	printf("%.3f ", weights[i*dimPattern+j]);
-                	}
-               		printf("]\n");
-        	}	
+        	print_weights(weights, dimPattern);
 	}
 	return weights;
 }
@@ -104,13 +100,11 @@ int parserFile(char * path, int * pts)
 	while (fgets(buffer, 255, (FILE*) fp)) {
 		p = buffer;
      		while (regexec(&re, p, 1, &match, 0) == 0) {
-        		pts[i] = p[match.rm_so] - '0';
+	       		pts[i] = p[match.rm_so] - '0';
         		p += match.rm_eo;
 			i++;
     		}
 	}
-
-	fclose(fp);
     	regfree(&re);
 	return 0;
 }
@@ -152,11 +146,22 @@ int main(int argc, char *argv[])
 				printf("Error in parse file\n");
 				exit(1);
 			}
+			float * weights = lState(nP, dimP, patterns);
+        		if (weights == NULL) {
+                		printf("Error on Learning\n");
+                		exit(1);
+        		}
+			if (verbose_mode) {
+        			print_weights(weights, dimP);
+			}
+
 			recognize = (int *) malloc(dimP*sizeof(int));
 			if (parserFile(pathRf, recognize)) {
 				printf("Error in parse file\n");
 				exit(1);
-			}				
+			}
+			checkVal(weights, recognize, dimP, nP);
+			free(weights);				
 		}
 		else {
 			PRINT_HELP;
@@ -165,11 +170,28 @@ int main(int argc, char *argv[])
 	}
 
 	if (type & 0x10) {
-		float * matrix = randomValue(nP, dimP);
-		if (matrix == NULL)
-			return 1;
-		checkVal(matrix, dimP, nP);
-		free(matrix);
+		if (dimP != 0 || nP !=0){
+			float * weights = randomValue(nP, dimP);
+			if (weights == NULL){
+				printf("Error on Learning");
+			 	exit(1);
+			}
+
+	        	int * recognize = (int *)malloc (dimP*sizeof(int));        
+        		srand((unsigned) *recognize);
+       			printf("Input:\t\t[");
+        		for (i = 0; i < dimP; i++) {
+                		recognize[i] = rand() % 2;
+               			printf(" %d", recognize[i]);
+        		}
+        		printf(" ]\n");
+			checkVal(weights, recognize, dimP, nP);
+			free(weights);
+		}
+		else {
+			PRINT_HELP;
+			exit(1);
+		}
 	}
 
 	return 0;
