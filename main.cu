@@ -6,16 +6,16 @@
 
 #include "hopfield.h"
 
-#define CICLI 5
+#define CICLI 30
 #define CHECKARG(arg, val) if(strcmp((arg), (val))==0)
 #define PRINT_HELP	printf("\t--file        Get pattern from File\n");\
                 	printf("\t--inline      Generate random Patterns\n");\
- 			printf("\t-v            verbose mode\n");\
 			printf("\t\t-pf [patterns file name]\n");\
                 	printf("\t\t-rf [patterns recognize]\n");\
                 	printf("\t\t-dimP [size of pattern]\n");\
-                	printf("\t\t-nP [number of pattern]\n");
-
+                	printf("\t\t-nP [number of pattern]\n");\
+ 			printf("\t-v            verbose mode\n");
+	
 
 void print_weights(float *weights, int dimP)
 {
@@ -46,7 +46,6 @@ int checkVal(float *weights, int * epat, int dimPattern, int nPatterns)
                 printf("%i ", epat[i]);
         printf("]\n");
 
-	free(epat);
 	return 0;
 }
 
@@ -62,9 +61,9 @@ float * randomValue(int nPatterns, int dimPattern)
         for (i = 0; i < nPatterns*dimPattern; i++) {
                 patterns[i] = rand() % 2;
         }
-	printf("Pattern Generated: \n");
+	printf("Patterns Generated: \n");
         for (j = 0; j < nPatterns; j++) {
-                printf("\t[ ");
+                printf("\t\t[ ");
                 for (i = 0; i < dimPattern; i++) {
                         printf("%d ", patterns[j*dimPattern + i]);
                 }
@@ -80,6 +79,7 @@ float * randomValue(int nPatterns, int dimPattern)
 	if (verbose_mode) {
         	print_weights(weights, dimPattern);
 	}
+	free(patterns);
 	return weights;
 }
 
@@ -161,7 +161,9 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			checkVal(weights, recognize, dimP, nP);
-			free(weights);				
+			free(weights);
+			free(patterns);
+			free(recognize);				
 		}
 		else {
 			PRINT_HELP;
@@ -187,6 +189,7 @@ int main(int argc, char *argv[])
         		printf(" ]\n");
 			checkVal(weights, recognize, dimP, nP);
 			free(weights);
+			free(recognize);
 		}
 		else {
 			PRINT_HELP;

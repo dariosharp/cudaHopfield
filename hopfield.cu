@@ -4,12 +4,9 @@
 #include <sys/types.h>
 #include <cuda_runtime_api.h>
 
-
 #define sizeGrid 65535
-#define sizeBlok 1024
+#define sizeBlock 1024
 #define sizeWarp 32
-
-#define imin(a,b) (a<b?a:b)
 
 
 __global__ void training(int dimP, int nP, int *ps, float *ws)
@@ -67,7 +64,7 @@ float * lState (int nPatterns, int dimPattern, int *patterns)
 	dim3 BLOCK_DIM (sizeBlock);
 	training<<< GRID_DIM, BLOCK_DIM, (sizeBlock)*sizeof(float) >>> (dimPattern, nPatterns, ps, ws);
   
-	if (cudaSuccess != cudaMemcpy (weights, ws, sizeW, cudaMemcpyDeviceToHost)) return NULL;
+	if (cudaSuccess != cudaMemcpy (weights, ws, sizeW*sizeof(float), cudaMemcpyDeviceToHost)) return NULL;
 	cudaFree(ps);
 	cudaFree(ws);
    	return weights;
@@ -87,7 +84,7 @@ int * actFunc(int dimP, int *pattern, float *weight)
 
 	dim3 GRID_DIM (((dimP*32)+sizeBlock-1)/sizeBlock);
 	dim3 BLOCK_DIM (sizeBlock);
-	hopActivation<<< GRID_DIM, BLOCK_DIM, sizeBlock*sizeof(float) >>> (dP, ws, pt, at);
+	hopActivation<<< GRID_DIM, BLOCK_DIM, sizeBlock*sizeof(float) >>> (dimP, ws, pt, at);
 
   	if (cudaSuccess != cudaMemcpy (activation, at, dimP*sizeof(int), cudaMemcpyDeviceToHost)) return NULL;
 	cudaFree(ws);
