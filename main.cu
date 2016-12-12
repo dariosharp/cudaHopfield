@@ -6,7 +6,7 @@
 
 #include "hopfield.h"
 
-#define CICLI 30
+#define CICLI 32
 #define CHECKARG(arg, val) if(strcmp((arg), (val))==0)
 #define PRINT_HELP	printf("\t--file        Get pattern from File\n");\
                 	printf("\t--inline      Generate random Patterns\n");\

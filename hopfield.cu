@@ -62,7 +62,7 @@ float * lState (int nPatterns, int dimPattern, int *patterns)
 
 	dim3 GRID_DIM ((sizeW+sizeBlock-1)/sizeBlock);
 	dim3 BLOCK_DIM (sizeBlock);
-	training<<< GRID_DIM, BLOCK_DIM, (sizeBlock)*sizeof(float) >>> (dimPattern, nPatterns, ps, ws);
+	training<<< GRID_DIM, BLOCK_DIM >>> (dimPattern, nPatterns, ps, ws);
   
 	if (cudaSuccess != cudaMemcpy (weights, ws, sizeW*sizeof(float), cudaMemcpyDeviceToHost)) return NULL;
 	cudaFree(ps);
