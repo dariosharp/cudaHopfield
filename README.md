@@ -24,7 +24,7 @@ It's possible execute tests using files:
 ```
 $ ./hopfield --file -pf pattern.txt -rf test.txt -dimP 1024 -nP 2
 ```
-or using random value just for fan:
+or using random values just for fan:
 ```
 $ ./hopfield --inline -dimP 1024 -nP 2
 ```
