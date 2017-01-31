@@ -20,7 +20,7 @@ $ ./hopefield
 	  -v            verbose mode
 ```
 
-It's possible execute tests using file:
+It's possible execute tests using files:
 ```
 $ ./hopfield --file -pf pattern.txt -rf test.txt -dimP 1024 -nP 2
 ```
