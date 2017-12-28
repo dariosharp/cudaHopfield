@@ -29,7 +29,7 @@ or using random values just for fan:
 $ ./hopfield --inline -dimP 1024 -nP 2
 ```
 
-####Hardware Project based
+#### Hardware Project based
 >Device: Tesla M2090
 >
 >GPU Clock rate: 1,30 Ghz
